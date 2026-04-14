@@ -12,9 +12,9 @@ on:
         required: true
         default: main
       version:
-        description: Optional envpool-assets version override.
-        required: false
-        default: ""
+        description: envpool-assets package version.
+        required: true
+        default: "0.1.0"
       publish_to_pypi:
         description: Publish the built wheel to PyPI.
         required: true
@@ -57,6 +57,22 @@ jobs:
         run: |
           python -m pip install --upgrade pip setuptools wheel
 
+      - name: Resolve package version
+        env:
+          VERSION_INPUT: ${{ github.event.inputs.version || '' }}
+        run: |
+          if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
+            version="${GITHUB_REF_NAME#v}"
+          else
+            version="$VERSION_INPUT"
+          fi
+          if [ -z "$version" ]; then
+            echo "envpool-assets version is required" >&2
+            exit 1
+          fi
+          echo "ASSET_VERSION=$version" >> "$GITHUB_ENV"
+          echo "envpool-assets version: $version"
+
       - name: Collect EnvPool assets
         run: |
           python scripts/collect_envpool_assets.py \
@@ -64,18 +80,15 @@ jobs:
             --output-root .asset-root
 
       - name: Build envpool-assets wheel
-        env:
-          VERSION_OVERRIDE: ${{ github.event.inputs.version || '' }}
         run: |
-          args=(
-            --asset-root .asset-root
-            --envpool-root .envpool-src
+          python scripts/build_wheel.py \
+            --asset-root .asset-root \
+            --version "$ASSET_VERSION" \
             --dist-dir dist
-          )
-          if [ -n "$VERSION_OVERRIDE" ]; then
-            args+=(--version "$VERSION_OVERRIDE")
-          fi
-          python scripts/build_wheel.py "${args[@]}"
+
+      - name: Optimize wheel
+        run: |
+          python scripts/optimize_wheel.py dist/envpool_assets-*.whl
 
       - name: Check wheel
         run: |

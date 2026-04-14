@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 import argparse
-import configparser
 import shutil
 import subprocess
 import sys
@@ -40,13 +39,9 @@ def _parse_args() -> argparse.Namespace:
         help="Directory containing the EnvPool asset subtrees.",
     )
     parser.add_argument(
-        "--envpool-root",
-        type=Path,
-        help="EnvPool checkout to read the package version from.",
-    )
-    parser.add_argument(
         "--version",
-        help="Explicit package version. Overrides --envpool-root.",
+        required=True,
+        help="envpool-assets package version.",
     )
     parser.add_argument(
         "--dist-dir",
@@ -82,23 +77,6 @@ def _validate_asset_root(asset_root: Path) -> Path:
             f"Asset wheel must not contain platform-specific EnvPool files: {forbidden}"
         )
     return asset_root
-
-
-def _read_envpool_version(envpool_root: Path) -> str:
-    config_path = envpool_root / "setup.cfg"
-    if not config_path.is_file():
-        raise FileNotFoundError(f"EnvPool setup.cfg not found: {config_path}")
-    config = configparser.ConfigParser()
-    config.read(config_path)
-    return config["metadata"]["version"]
-
-
-def _resolve_version(version: str | None, envpool_root: Path | None) -> str:
-    if version:
-        return version
-    if envpool_root is None:
-        raise ValueError("Pass --version or --envpool-root.")
-    return _read_envpool_version(envpool_root.resolve())
 
 
 def _copy_tree(src: Path, dst: Path) -> None:
@@ -227,7 +205,7 @@ def main() -> None:
     args = _parse_args()
     repo_root = Path(__file__).resolve().parents[1]
     asset_root = _validate_asset_root(args.asset_root)
-    version = _resolve_version(args.version, args.envpool_root)
+    version = args.version
 
     with tempfile.TemporaryDirectory(prefix="envpool-assets-wheel-") as tmpdir:
         build_root = Path(tmpdir)

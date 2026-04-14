@@ -7,6 +7,10 @@ resulting wheel should be a single `py3-none-any` artifact, so it does not need
 a Python-version or platform build matrix. Platform-specific executables and
 native libraries stay in the main `envpool` wheels.
 
+`envpool-assets` has its own compatibility version. It is not derived from the
+main `envpool` package version; for example, an `envpool` release can depend on
+an asset compatibility range such as `envpool-assets>=0.1.0,<0.2.0`.
+
 ## Build locally
 
 From a checked-out EnvPool repository:
@@ -18,8 +22,10 @@ python scripts/collect_envpool_assets.py \
 
 python scripts/build_wheel.py \
   --asset-root .asset-root \
-  --envpool-root /path/to/envpool \
+  --version 0.1.0 \
   --dist-dir dist
+
+python scripts/optimize_wheel.py dist/envpool_assets-*.whl
 ```
 
 If you already have an asset root with the EnvPool asset subtree layout, skip
@@ -44,4 +50,3 @@ vizdoom/maps
 `vizdoom/bin/vizdoom` and `vizdoom/bin/vizdoom.pk3` are deliberately excluded
 because they are platform-specific runtime files shipped by the main EnvPool
 wheel.
-
