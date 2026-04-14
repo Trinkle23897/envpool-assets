@@ -1,0 +1,9 @@
+/.asset-root/
+/.envpool-src/
+/.python-version
+/.ruff_cache/
+/build/
+/dist/
+/envpool_assets.egg-info/
+*.py[cod]
+__pycache__/

@@ -1,0 +1,154 @@
+name: Build wheel
+
+on:
+  workflow_dispatch:
+    inputs:
+      envpool_repository:
+        description: EnvPool repository to source assets from.
+        required: true
+        default: sail-sg/envpool
+      envpool_ref:
+        description: EnvPool git ref to build assets from.
+        required: true
+        default: main
+      version:
+        description: Optional envpool-assets version override.
+        required: false
+        default: ""
+      publish_to_pypi:
+        description: Publish the built wheel to PyPI.
+        required: true
+        default: false
+        type: boolean
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  build-wheel:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out envpool-assets
+        uses: actions/checkout@v4
+
+      - name: Check out EnvPool
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.inputs.envpool_repository || 'sail-sg/envpool' }}
+          ref: ${{ github.event.inputs.envpool_ref || 'main' }}
+          path: .envpool-src
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up bazelisk
+        uses: bazelbuild/setup-bazelisk@v3
+
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+
+      - name: Collect EnvPool assets
+        run: |
+          python scripts/collect_envpool_assets.py \
+            --envpool-root .envpool-src \
+            --output-root .asset-root
+
+      - name: Build envpool-assets wheel
+        env:
+          VERSION_OVERRIDE: ${{ github.event.inputs.version || '' }}
+        run: |
+          args=(
+            --asset-root .asset-root
+            --envpool-root .envpool-src
+            --dist-dir dist
+          )
+          if [ -n "$VERSION_OVERRIDE" ]; then
+            args+=(--version "$VERSION_OVERRIDE")
+          fi
+          python scripts/build_wheel.py "${args[@]}"
+
+      - name: Check wheel
+        run: |
+          python -m pip install twine
+          python -m twine check dist/envpool_assets-*.whl
+          python - <<'PY'
+          from pathlib import Path
+
+          wheels = list(Path("dist").glob("envpool_assets-*.whl"))
+          if len(wheels) != 1:
+              raise SystemExit(f"expected exactly one wheel, found {wheels}")
+          limit = 100_000_000
+          size = wheels[0].stat().st_size
+          print(f"{wheels[0]}: {size} bytes")
+          if size >= limit:
+              raise SystemExit(f"wheel exceeds {limit} bytes")
+          PY
+
+      - name: Smoke test wheel
+        run: |
+          python -m pip install --target /tmp/envpool-assets-test dist/envpool_assets-*.whl
+          PYTHONPATH=/tmp/envpool-assets-test python - <<'PY'
+          from pathlib import Path
+          import envpool_assets
+
+          root = envpool_assets.asset_path()
+          required = [
+              "atari/roms",
+              "gfootball/assets",
+              "mujoco/assets_dmc",
+              "mujoco/assets_gym",
+              "mujoco/metaworld/assets",
+              "mujoco/robotics/assets",
+              "procgen/assets",
+              "vizdoom/bin/freedoom2.wad",
+              "vizdoom/maps",
+          ]
+          for rel in required:
+              path = root / rel
+              if not path.exists():
+                  raise SystemExit(f"missing asset path: {path}")
+          forbidden = [
+              root / "vizdoom/bin/vizdoom",
+              root / "vizdoom/bin/vizdoom.pk3",
+          ]
+          for path in forbidden:
+              if path.exists():
+                  raise SystemExit(f"platform-specific file leaked into wheel: {path}")
+          print(root)
+          PY
+
+      - name: Upload wheel artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: envpool-assets-wheel
+          path: dist/envpool_assets-*.whl
+          if-no-files-found: error
+
+  publish-pypi:
+    needs: build-wheel
+    if: github.event_name == 'push' || github.event.inputs.publish_to_pypi == 'true'
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Download wheel artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: envpool-assets-wheel
+          path: dist
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1

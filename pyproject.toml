@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=70", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "envpool-assets"
+version = "0.0.0"
+description = "Runtime data assets for EnvPool."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+authors = [
+  { name = "EnvPool Contributors", email = "sail@sea.com" },
+]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Operating System :: OS Independent",
+]
+
