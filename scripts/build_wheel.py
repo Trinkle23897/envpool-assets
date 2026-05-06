@@ -18,6 +18,7 @@ ASSET_PATHS = (
     "mujoco/assets_dmc",
     "mujoco/assets_gym",
     "mujoco/metaworld/assets",
+    "mujoco/myosuite/assets",
     "mujoco/robotics/assets",
     "procgen/assets",
     "vizdoom/bin/freedoom2.wad",

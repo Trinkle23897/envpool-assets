@@ -100,7 +100,7 @@ jobs:
           wheels = list(Path("dist").glob("envpool_assets-*.whl"))
           if len(wheels) != 1:
               raise SystemExit(f"expected exactly one wheel, found {wheels}")
-          limit = 100_000_000
+          limit = 104_000_000
           size = wheels[0].stat().st_size
           print(f"{wheels[0]}: {size} bytes")
           if size >= limit:
@@ -121,6 +121,7 @@ jobs:
               "mujoco/assets_dmc",
               "mujoco/assets_gym",
               "mujoco/metaworld/assets",
+              "mujoco/myosuite/assets",
               "mujoco/robotics/assets",
               "procgen/assets",
               "vizdoom/bin/freedoom2.wad",
