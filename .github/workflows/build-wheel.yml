@@ -12,11 +12,11 @@ on:
         required: true
         default: main
       version:
-        description: envpool-assets package version.
+        description: Asset package version.
         required: true
-        default: "0.1.0"
+        default: "0.3.0"
       publish_to_pypi:
-        description: Publish the built wheel to PyPI.
+        description: Publish the built wheels to PyPI.
         required: true
         default: false
         type: boolean
@@ -33,6 +33,13 @@ env:
 jobs:
   build-wheel:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - base
+          - mujoco-large
+          - mujoco-playground-humanoid
 
     steps:
       - name: Check out envpool-assets
@@ -67,40 +74,42 @@ jobs:
             version="$VERSION_INPUT"
           fi
           if [ -z "$version" ]; then
-            echo "envpool-assets version is required" >&2
+            echo "asset package version is required" >&2
             exit 1
           fi
           echo "ASSET_VERSION=$version" >> "$GITHUB_ENV"
-          echo "envpool-assets version: $version"
+          echo "asset package version: $version"
 
       - name: Collect EnvPool assets
         run: |
           python scripts/collect_envpool_assets.py \
             --envpool-root .envpool-src \
-            --output-root .asset-root
+            --output-root ".asset-root-${{ matrix.package }}" \
+            --package "${{ matrix.package }}"
 
-      - name: Build envpool-assets wheel
+      - name: Build asset wheel
         run: |
           python scripts/build_wheel.py \
-            --asset-root .asset-root \
+            --asset-root ".asset-root-${{ matrix.package }}" \
             --version "$ASSET_VERSION" \
+            --package "${{ matrix.package }}" \
             --dist-dir dist
 
       - name: Optimize wheel
         run: |
-          python scripts/optimize_wheel.py dist/envpool_assets-*.whl
+          python scripts/optimize_wheel.py dist/*.whl
 
       - name: Check wheel
         run: |
           python -m pip install twine
-          python -m twine check dist/envpool_assets-*.whl
+          python -m twine check dist/*.whl
           python - <<'PY'
           from pathlib import Path
 
-          wheels = list(Path("dist").glob("envpool_assets-*.whl"))
+          wheels = list(Path("dist").glob("*.whl"))
           if len(wheels) != 1:
               raise SystemExit(f"expected exactly one wheel, found {wheels}")
-          limit = 104_000_000
+          limit = 100_000_000
           size = wheels[0].stat().st_size
           print(f"{wheels[0]}: {size} bytes")
           if size >= limit:
@@ -109,59 +118,69 @@ jobs:
 
       - name: Smoke test wheel
         run: |
-          python -m pip install --target /tmp/envpool-assets-test dist/envpool_assets-*.whl
-          PYTHONPATH=/tmp/envpool-assets-test python - <<'PY'
+          python -m pip install --target /tmp/envpool-assets-test dist/*.whl
+          PYTHONPATH=/tmp/envpool-assets-test:. python - "${{ matrix.package }}" <<'PY'
+          import importlib
+          import importlib.util
+          import sys
           from pathlib import Path
-          import envpool_assets
 
-          root = envpool_assets.asset_path()
-          required = [
-              "atari/roms",
-              "gfootball/assets",
-              "mujoco/assets_dmc",
-              "mujoco/assets_gym",
-              "mujoco/metaworld/assets",
-              "mujoco/myosuite/assets",
-              "mujoco/robotics/assets",
-              "procgen/assets",
-              "vizdoom/bin/freedoom2.wad",
-              "vizdoom/maps",
-          ]
-          for rel in required:
+          spec = importlib.util.spec_from_file_location(
+              "build_wheel_config", Path("scripts/build_wheel.py")
+          )
+          build_wheel = importlib.util.module_from_spec(spec)
+          assert spec.loader is not None
+          spec.loader.exec_module(build_wheel)
+
+          package = sys.argv[1]
+          config = build_wheel.PACKAGE_CONFIGS[package]
+          module = importlib.import_module(str(config["module_name"]))
+          root = module.asset_path()
+          for rel in config["asset_paths"]:
               path = root / rel
               if not path.exists():
                   raise SystemExit(f"missing asset path: {path}")
-          forbidden = [
-              root / "vizdoom/bin/vizdoom",
-              root / "vizdoom/bin/vizdoom.pk3",
-          ]
-          for path in forbidden:
+          for rel in config["forbidden_paths"]:
+              path = root / rel
               if path.exists():
-                  raise SystemExit(f"platform-specific file leaked into wheel: {path}")
+                  raise SystemExit(
+                      f"platform-specific file leaked into wheel: {path}"
+                  )
           print(root)
           PY
 
       - name: Upload wheel artifact
         uses: actions/upload-artifact@v4
         with:
-          name: envpool-assets-wheel
-          path: dist/envpool_assets-*.whl
+          name: envpool-assets-${{ matrix.package }}-wheel
+          path: dist/*.whl
           if-no-files-found: error
 
   publish-pypi:
     needs: build-wheel
     if: github.event_name == 'push' || github.event.inputs.publish_to_pypi == 'true'
     runs-on: ubuntu-latest
-    environment: pypi
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - package: base
+            environment: pypi
+          - package: mujoco-large
+            environment: pypi-mujoco-large
+          - package: mujoco-playground-humanoid
+            environment: pypi-mujoco-playground-humanoid
+    environment:
+      name: ${{ matrix.environment }}
     permissions:
       contents: read
       id-token: write
 
     steps:
-      - name: Download wheel artifact
+      - name: Download wheel artifacts
         uses: actions/download-artifact@v4
         with:
-          name: envpool-assets-wheel
+          name: envpool-assets-${{ matrix.package }}-wheel
           path: dist
 
       - name: Publish to PyPI
