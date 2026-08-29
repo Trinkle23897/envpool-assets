@@ -11,10 +11,20 @@ on:
         description: EnvPool git ref to build assets from.
         required: true
         default: main
+      package:
+        description: Asset package to build.
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - base
+          - mujoco-large
+          - mujoco-playground-humanoid
       version:
         description: Asset package version.
         required: true
-        default: "0.3.0"
+        default: "0.4.1"
       publish_to_pypi:
         description: Publish the built wheels to PyPI.
         required: true
@@ -36,10 +46,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        package:
-          - base
-          - mujoco-large
-          - mujoco-playground-humanoid
+        package: >-
+          ${{ fromJSON(
+            github.event_name == 'workflow_dispatch'
+            && inputs.package != 'all' && inputs.package != ''
+            && format('["{0}"]', inputs.package)
+            || '["base", "mujoco-large", "mujoco-playground-humanoid"]'
+          ) }}
 
     steps:
       - name: Check out envpool-assets
@@ -163,15 +176,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - package: base
-            environment: pypi
-          - package: mujoco-large
-            environment: pypi-mujoco-large
-          - package: mujoco-playground-humanoid
-            environment: pypi-mujoco-playground-humanoid
+        package: >-
+          ${{ fromJSON(
+            github.event_name == 'workflow_dispatch'
+            && inputs.package != 'all' && inputs.package != ''
+            && format('["{0}"]', inputs.package)
+            || '["base", "mujoco-large", "mujoco-playground-humanoid"]'
+          ) }}
     environment:
-      name: ${{ matrix.environment }}
+      name: ${{ matrix.package == 'base' && 'pypi' || format('pypi-{0}', matrix.package) }}
     permissions:
       contents: read
       id-token: write
