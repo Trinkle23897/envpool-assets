@@ -39,6 +39,8 @@ PACKAGE_CONFIGS: dict[str, PackageConfig] = {
             "gfootball/assets",
             "mujoco/assets_dmc",
             "mujoco/assets_gym",
+            "mujoco/locomotion/assets_dm_control",
+            "mujoco/locomotion/assets_labmaze",
             "mujoco/metaworld/assets",
             "mujoco/robotics/assets",
             "procgen/assets",
@@ -55,21 +57,33 @@ PACKAGE_CONFIGS: dict[str, PackageConfig] = {
             "mujoco/myosuite/assets",
             "mujoco/playground/assets/mujoco_playground/_src/locomotion/go1",
             "mujoco/playground/assets/mujoco_playground/_src/locomotion/spot",
-            "mujoco/playground/assets/mujoco_playground/_src/"
-            "manipulation/aero_hand",
-            "mujoco/playground/assets/mujoco_playground/_src/"
-            "manipulation/aloha",
-            "mujoco/playground/assets/mujoco_playground/_src/"
-            "manipulation/franka_emika_panda",
-            "mujoco/playground/assets/mujoco_playground/_src/"
-            "manipulation/franka_emika_panda_robotiq",
-            "mujoco/playground/assets/mujoco_playground/_src/"
-            "manipulation/leap_hand",
+            (
+                "mujoco/playground/assets/mujoco_playground/_src/"
+                "manipulation/aero_hand"
+            ),
+            (
+                "mujoco/playground/assets/mujoco_playground/_src/"
+                "manipulation/aloha"
+            ),
+            (
+                "mujoco/playground/assets/mujoco_playground/_src/"
+                "manipulation/franka_emika_panda"
+            ),
+            (
+                "mujoco/playground/assets/mujoco_playground/_src/"
+                "manipulation/franka_emika_panda_robotiq"
+            ),
+            (
+                "mujoco/playground/assets/mujoco_playground/_src/"
+                "manipulation/leap_hand"
+            ),
             "mujoco/playground/assets/mujoco_menagerie/google_barkour_vb",
             "mujoco/playground/assets/mujoco_menagerie/unitree_go1",
             "mujoco/playground/assets/mujoco_menagerie/boston_dynamics_spot",
-            "mujoco/playground/assets/mujoco_menagerie/"
-            "tetheria_aero_hand_open",
+            (
+                "mujoco/playground/assets/mujoco_menagerie/"
+                "tetheria_aero_hand_open"
+            ),
             "mujoco/playground/assets/mujoco_menagerie/aloha",
             "mujoco/playground/assets/mujoco_menagerie/franka_emika_panda",
             "mujoco/playground/assets/mujoco_menagerie/robotiq_2f85_v4",
@@ -79,17 +93,20 @@ PACKAGE_CONFIGS: dict[str, PackageConfig] = {
     "mujoco-playground-humanoid": _package_config(
         "mujoco-playground-humanoid",
         (
-            "mujoco/playground/assets/mujoco_playground/_src/"
-            "locomotion/apollo",
-            "mujoco/playground/assets/mujoco_playground/_src/"
-            "locomotion/berkeley_humanoid",
+            (
+                "mujoco/playground/assets/mujoco_playground/_src/"
+                "locomotion/apollo"
+            ),
+            (
+                "mujoco/playground/assets/mujoco_playground/_src/"
+                "locomotion/berkeley_humanoid"
+            ),
             "mujoco/playground/assets/mujoco_playground/_src/locomotion/g1",
             "mujoco/playground/assets/mujoco_playground/_src/locomotion/h1",
             "mujoco/playground/assets/mujoco_playground/_src/locomotion/op3",
             "mujoco/playground/assets/mujoco_playground/_src/locomotion/t1",
             "mujoco/playground/assets/mujoco_menagerie/apptronik_apollo",
-            "mujoco/playground/assets/mujoco_menagerie/"
-            "berkeley_humanoid",
+            "mujoco/playground/assets/mujoco_menagerie/berkeley_humanoid",
             "mujoco/playground/assets/mujoco_menagerie/unitree_g1",
             "mujoco/playground/assets/mujoco_menagerie/unitree_h1",
             "mujoco/playground/assets/mujoco_menagerie/robotis_op3",
@@ -130,7 +147,9 @@ def _parse_args() -> argparse.Namespace:
 def _asset_root_complete(
     asset_root: Path, asset_paths: tuple[str, ...]
 ) -> bool:
-    return all((asset_root / asset_path).exists() for asset_path in asset_paths)
+    return all(
+        (asset_root / asset_path).exists() for asset_path in asset_paths
+    )
 
 
 def _validate_asset_root(
@@ -263,9 +282,7 @@ def _build_wheel(build_root: Path, dist_dir: Path) -> None:
         raise subprocess.CalledProcessError(result.returncode, command)
 
 
-def _built_wheel(
-    dist_dir: Path, distribution_name: str, version: str
-) -> Path:
+def _built_wheel(dist_dir: Path, distribution_name: str, version: str) -> Path:
     wheel_prefix = distribution_name.replace("-", "_")
     matches = sorted(dist_dir.glob(f"{wheel_prefix}-{version}-*.whl"))
     if len(matches) != 1:

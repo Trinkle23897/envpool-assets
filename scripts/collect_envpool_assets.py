@@ -19,19 +19,18 @@ _PLAYGROUND_TARGETS = (
 
 def _playground_source_path(source_path: str) -> tuple[str, str]:
     return (
-        "envpool/mujoco/playground/assets/mujoco_playground/_src/"
-        f"{source_path}",
-        "mujoco/playground/assets/mujoco_playground/_src/"
-        f"{source_path}",
+        (
+            "envpool/mujoco/playground/assets/mujoco_playground/_src/"
+            f"{source_path}"
+        ),
+        f"mujoco/playground/assets/mujoco_playground/_src/{source_path}",
     )
 
 
 def _playground_menagerie_path(robot_path: str) -> tuple[str, str]:
     return (
-        "envpool/mujoco/playground/assets/mujoco_menagerie/"
-        f"{robot_path}",
-        "mujoco/playground/assets/mujoco_menagerie/"
-        f"{robot_path}",
+        f"envpool/mujoco/playground/assets/mujoco_menagerie/{robot_path}",
+        f"mujoco/playground/assets/mujoco_menagerie/{robot_path}",
     )
 
 
@@ -45,6 +44,7 @@ def _playground_package(
     )
     return _PLAYGROUND_TARGETS, tuple(mappings)
 
+
 PACKAGE_CONFIGS: dict[str, PackageConfig] = {
     "base": (
         (
@@ -55,6 +55,8 @@ PACKAGE_CONFIGS: dict[str, PackageConfig] = {
             "//envpool/mujoco:gen_mujoco_gym_xml",
             "//envpool/mujoco:gen_metaworld_assets",
             "//envpool/mujoco:gen_gymnasium_robotics_assets",
+            "//envpool/mujoco/locomotion:assets",
+            "//envpool/mujoco/locomotion:labmaze_assets",
             "//envpool/procgen:gen_procgen_assets",
             "//envpool/vizdoom:gen_vizdoom_maps",
             "//envpool/vizdoom/bin:freedoom",
@@ -65,6 +67,14 @@ PACKAGE_CONFIGS: dict[str, PackageConfig] = {
             ("envpool/gfootball/assets/fonts", "gfootball/assets/fonts"),
             ("envpool/mujoco/assets_dmc", "mujoco/assets_dmc"),
             ("envpool/mujoco/assets_gym", "mujoco/assets_gym"),
+            (
+                "envpool/mujoco/locomotion/assets_dm_control",
+                "mujoco/locomotion/assets_dm_control",
+            ),
+            (
+                "envpool/mujoco/locomotion/assets_labmaze",
+                "mujoco/locomotion/assets_labmaze",
+            ),
             ("envpool/mujoco/metaworld/assets", "mujoco/metaworld/assets"),
             ("envpool/mujoco/robotics/assets", "mujoco/robotics/assets"),
             ("envpool/procgen/assets", "procgen/assets"),

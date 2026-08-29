@@ -30,7 +30,7 @@ python scripts/collect_envpool_assets.py \
 
 python scripts/build_wheel.py \
   --asset-root .asset-root-base \
-  --version 0.3.0 \
+  --version 0.4.1 \
   --package base \
   --dist-dir dist
 
@@ -39,6 +39,15 @@ python scripts/optimize_wheel.py dist/envpool_assets-*.whl
 
 If you already have an asset root with the EnvPool asset subtree layout, skip
 collection and run only `scripts/build_wheel.py`.
+
+The base package's `0.4.1` release adds the DMC Composer locomotion and Soccer
+models, textures, skins, selected motion clips, and license notices. Use an
+EnvPool checkout containing the native locomotion implementation. The other
+two asset packages do not need a version change for this addition.
+
+For the GitHub Actions workflow, select `package: base` and set `envpool_ref`
+to the EnvPool source commit to build only this wheel. The default `all`
+selection and version tags continue to build all three packages.
 
 ## Expected Asset Root Layouts
 
@@ -49,6 +58,8 @@ base:              atari/roms
                    gfootball/assets
                    mujoco/assets_dmc
                    mujoco/assets_gym
+                   mujoco/locomotion/assets_dm_control
+                   mujoco/locomotion/assets_labmaze
                    mujoco/metaworld/assets
                    mujoco/robotics/assets
                    procgen/assets
