@@ -32,6 +32,10 @@ def _package_config(
 
 
 PACKAGE_CONFIGS: dict[str, PackageConfig] = {
+    "mjlab": _package_config(
+        "mjlab",
+        ("mujoco/mjlab/assets", "mujoco/mjlab/licenses"),
+    ),
     "base": _package_config(
         "base",
         (

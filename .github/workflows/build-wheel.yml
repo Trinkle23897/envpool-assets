@@ -21,6 +21,7 @@ on:
           - base
           - mujoco-large
           - mujoco-playground-humanoid
+          - mjlab
       version:
         description: Asset package version.
         required: true
@@ -51,7 +52,7 @@ jobs:
             github.event_name == 'workflow_dispatch'
             && inputs.package != 'all' && inputs.package != ''
             && format('["{0}"]', inputs.package)
-            || '["base", "mujoco-large", "mujoco-playground-humanoid"]'
+            || '["base", "mujoco-large", "mujoco-playground-humanoid", "mjlab"]'
           ) }}
 
     steps:
@@ -181,7 +182,7 @@ jobs:
             github.event_name == 'workflow_dispatch'
             && inputs.package != 'all' && inputs.package != ''
             && format('["{0}"]', inputs.package)
-            || '["base", "mujoco-large", "mujoco-playground-humanoid"]'
+            || '["base", "mujoco-large", "mujoco-playground-humanoid", "mjlab"]'
           ) }}
     environment:
       name: ${{ matrix.package == 'base' && 'pypi' || format('pypi-{0}', matrix.package) }}

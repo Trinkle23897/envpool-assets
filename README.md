@@ -16,6 +16,7 @@ derived from the main `envpool` package version.
 envpool-assets
 envpool-assets-mujoco-large
 envpool-assets-mujoco-playground-humanoid
+envpool-assets-mjlab
 ```
 
 ## Build Locally
@@ -47,7 +48,19 @@ two asset packages do not need a version change for this addition.
 
 For the GitHub Actions workflow, select `package: base` and set `envpool_ref`
 to the EnvPool source commit to build only this wheel. The default `all`
-selection and version tags continue to build all three packages.
+selection and version tags build all four packages.
+
+The separate `envpool-assets-mjlab` package contains the twelve built-in MJLab
+1.6.0 task presets, including meshes, textures, and serialized native CPU
+execution graphs. Shared arrays are stored once with lossless Zstandard
+compression. It contains no executable code, Python environment implementation,
+or reference motion; tracking tasks take an explicit motion file from the user.
+The native kernels are compiled into the main EnvPool wheel.
+
+For the first MJLab asset release, select `package: mjlab`, version `0.1.0`,
+and the exact EnvPool source commit containing the native MJLab port. The three
+existing asset packages keep their own versions and contents. Verify this one
+asset wheel with all four native platform builds before publishing it.
 
 ## Expected Asset Root Layouts
 
@@ -94,6 +107,8 @@ mujoco-playground-humanoid:
                    mujoco/playground/assets/mujoco_menagerie/unitree_h1
                    mujoco/playground/assets/mujoco_menagerie/robotis_op3
                    mujoco/playground/assets/mujoco_menagerie/booster_t1
+mjlab:             mujoco/mjlab/assets
+                   mujoco/mjlab/licenses
 ```
 
 `vizdoom/bin/vizdoom` and `vizdoom/bin/vizdoom.pk3` are deliberately excluded
