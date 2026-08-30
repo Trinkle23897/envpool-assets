@@ -46,6 +46,16 @@ def _playground_package(
 
 
 PACKAGE_CONFIGS: dict[str, PackageConfig] = {
+    "mjlab": (
+        (
+            "//envpool/mujoco/mjlab:assets",
+            "//envpool/mujoco/mjlab:licenses",
+        ),
+        (
+            ("envpool/mujoco/mjlab/assets", "mujoco/mjlab/assets"),
+            ("envpool/mujoco/mjlab/licenses", "mujoco/mjlab/licenses"),
+        ),
+    ),
     "base": (
         (
             "//envpool/atari:gen_atari_roms",
