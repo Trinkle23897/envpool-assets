@@ -62,6 +62,14 @@ and the exact EnvPool source commit containing the native MJLab port. The three
 existing asset packages keep their own versions and contents. Verify this one
 asset wheel with all four native platform builds before publishing it.
 
+To publish an already tested wheel without rebuilding it, attach it to a release
+in this repository and set `prebuilt_release` to that tag and `prebuilt_sha256`
+to the wheel's SHA-256. Select one package and its version. The workflow checks
+the exact file's hash, metadata, size, and installation before publishing; it
+does not regenerate or optimize the wheel. Leave these inputs empty for the
+usual source build. MJLab exports can differ in model floating-point arrays
+between build hosts, so publish the artifact that passed platform validation.
+
 ## Expected Asset Root Layouts
 
 The base package contains the smaller cross-family asset subtrees:

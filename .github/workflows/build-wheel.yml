@@ -26,6 +26,12 @@ on:
         description: Asset package version.
         required: true
         default: "0.4.1"
+      prebuilt_release:
+        description: Release tag in this repository containing an already tested wheel (optional).
+        required: false
+      prebuilt_sha256:
+        description: Required SHA-256 when using a prebuilt release.
+        required: false
       publish_to_pypi:
         description: Publish the built wheels to PyPI.
         required: true
@@ -60,6 +66,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Check out EnvPool
+        if: inputs.prebuilt_release == ''
         uses: actions/checkout@v4
         with:
           repository: ${{ github.event.inputs.envpool_repository || 'sail-sg/envpool' }}
@@ -72,9 +79,11 @@ jobs:
           python-version: "3.12"
 
       - name: Set up bazelisk
+        if: inputs.prebuilt_release == ''
         uses: bazelbuild/setup-bazelisk@v3
 
       - name: Install build tools
+        if: inputs.prebuilt_release == ''
         run: |
           python -m pip install --upgrade pip setuptools wheel
 
@@ -94,7 +103,48 @@ jobs:
           echo "ASSET_VERSION=$version" >> "$GITHUB_ENV"
           echo "asset package version: $version"
 
+      - name: Download the tested wheel
+        if: inputs.prebuilt_release != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PREBUILT_RELEASE: ${{ inputs.prebuilt_release }}
+          EXPECTED_SHA256: ${{ inputs.prebuilt_sha256 }}
+          SELECTED_PACKAGE: ${{ inputs.package }}
+          ASSET_PACKAGE: ${{ matrix.package }}
+        run: |
+          python - <<'PY'
+          import hashlib
+          import os
+          from pathlib import Path
+          import re
+          import subprocess
+
+          if os.environ["SELECTED_PACKAGE"] == "all":
+              raise SystemExit("a prebuilt release must select one package")
+          expected = os.environ["EXPECTED_SHA256"]
+          if not re.fullmatch(r"[0-9a-f]{64}", expected):
+              raise SystemExit("a prebuilt release requires its SHA-256")
+          package = os.environ["ASSET_PACKAGE"]
+          module = "envpool_assets"
+          if package != "base":
+              module += "_" + package.replace("-", "_")
+          filename = f"{module}-{os.environ['ASSET_VERSION']}-py3-none-any.whl"
+          if Path(filename).name != filename:
+              raise SystemExit("invalid wheel filename")
+          subprocess.run(
+              ["gh", "release", "download", os.environ["PREBUILT_RELEASE"],
+               "--repo", os.environ["GITHUB_REPOSITORY"], "--pattern", filename,
+               "--dir", "dist"], check=True,
+          )
+          wheel = Path("dist") / filename
+          actual = hashlib.sha256(wheel.read_bytes()).hexdigest()
+          if actual != expected:
+              raise SystemExit(f"wheel SHA-256 mismatch: {actual}")
+          print(f"Verified {filename}: {actual}")
+          PY
+
       - name: Collect EnvPool assets
+        if: inputs.prebuilt_release == ''
         run: |
           python scripts/collect_envpool_assets.py \
             --envpool-root .envpool-src \
@@ -102,6 +152,7 @@ jobs:
             --package "${{ matrix.package }}"
 
       - name: Build asset wheel
+        if: inputs.prebuilt_release == ''
         run: |
           python scripts/build_wheel.py \
             --asset-root ".asset-root-${{ matrix.package }}" \
@@ -110,6 +161,7 @@ jobs:
             --dist-dir dist
 
       - name: Optimize wheel
+        if: inputs.prebuilt_release == ''
         run: |
           python scripts/optimize_wheel.py dist/*.whl
 
